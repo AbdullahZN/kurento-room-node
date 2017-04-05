@@ -21,6 +21,7 @@
     "kurento-client": "^6.6.0",
     "node-uuid": "^1.4.7",
     "path": "^0.12.7",
+    "socket.io": "^1.7.3",
     "url": "^0.11.0",
     "wepback": "^1.0.0",
     "ws": "^2.2.0"
