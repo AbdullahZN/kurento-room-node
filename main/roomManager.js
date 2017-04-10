@@ -1,6 +1,6 @@
 const io            = require('socket.io');
-const Participant   = require('./Participant');
 const kurentoClient = require('kurento-client');
+const Participant   = require('./participant');
 
 module.exports = class kurentoRoom {
     constructor(server, kmsUri) {
@@ -50,7 +50,7 @@ module.exports = class kurentoRoom {
 
             const candidates = participant.getCandidates(pid) || [];
             candidates.forEach(() => {
-                console.error(`${pid} collect candidate for publisher endpoint`);
+                console.log(`${pid} collect candidate for publisher endpoint`);
                 participant.publisher.addIceCandidate(candidates.shift().candidate);
             });
 
@@ -62,10 +62,13 @@ module.exports = class kurentoRoom {
             });
 
             participant.notifyClient('startLocalStream');
-            participant.notifyClient('existingParticipants', Object.keys(room.participants));
-            Object.values(room.participants).forEach(participant =>
-                participant.notifyClient('newParticipant', pid)
-            );
+
+            Object.values(room.participants).forEach((existing) => {
+                const {id: eid, name: ename } = existing;
+                participant.notifyClient('existingParticipants', { id: eid, name: ename });
+                existing.notifyClient('newParticipant', { id: pid, name: participant.name });
+            })
+
             room.participants[pid] = participant;
         });
     }
@@ -74,6 +77,7 @@ module.exports = class kurentoRoom {
         this.kurento.create('MediaPipeline', (error, pipeline) => {
             if (error) return console.error('Error creating pipeline', error);
             const room = this.createAndStoreRoomObject(roomName, pipeline);
+            this.socket.join(roomName);
             this.createPublisherEndpoint(room, participant);
         });
     }

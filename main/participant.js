@@ -1,4 +1,4 @@
-module.exports = class Participant {
+module.exports = class participant {
     constructor(socket, roomManager) {
         this.socket = socket;
         this.id = socket.id;
@@ -91,6 +91,7 @@ module.exports = class Participant {
         this.publisher.release();
         Object.values(this.subscribers).forEach(endpoint => endpoint.release());
         this.roomManager.unregisterParticipant(this.id);
+        this.notifyOthers('participantLeft', this.id);
         console.log(`Removed participant ${this.id}`);
     }
 
@@ -116,12 +117,16 @@ module.exports = class Participant {
             : this.addSubsriberCandidate(senderId, iceCandidate);
     }
 
-    chatAll(data) {
-        console.log(`${id} > receive message from ${data.id}`);
+    chatAll(message) {
+        this.notifyOthers('newMessage', { message, from: this.name });
     }
 
     notifyClient(notification, data) {
         this.socket.emit(notification, data);
+    }
+
+    notifyOthers(notification, data) {
+        this.socket.to(this.roomName).emit(notification, data);
     }
 
     getCandidates(id) {

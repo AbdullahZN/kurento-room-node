@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
+const fs      = require('fs');
+const path    = require('path');
+const https   = require('https');
 const express = require('express');
-const app = express();
-const config = JSON.parse( fs.readFileSync("./kurentoConfig.json") );
+const config  = require('./kurentoConfig.json');
+const app     = express();
 
 const port = config.server.port;
 const opts = {
