@@ -16,5 +16,5 @@ const server = https.createServer(opts, app).listen(port, (err) => {
   console.log(err || `Listening at ${config.server.uri}:${port}`)
 });
 
-const kurentoRoom = require('./main/roomManager');
-const roomManager = new kurentoRoom(server, config.kmsUri);
+const RoomManager = require('./main/roomManager');
+const roomManager = new RoomManager(server, config.kmsUri);

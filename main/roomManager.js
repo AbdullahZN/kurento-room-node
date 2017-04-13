@@ -2,7 +2,7 @@ const io            = require('socket.io');
 const kurentoClient = require('kurento-client');
 const Participant   = require('./participant');
 
-module.exports = class kurentoRoom {
+module.exports = class RoomManager {
     constructor(server, kmsUri) {
         this.kurento = kurentoClient(kmsUri);
         io(server).on('connection', socket => new Participant(socket, this));
@@ -21,6 +21,7 @@ module.exports = class kurentoRoom {
 
     unregisterParticipant(id) {
         const participant = this.participantsById[id];
+        if (!participant) return;
         const name = participant.name;
         const roomName = participant.roomName;
 
@@ -44,8 +45,8 @@ module.exports = class kurentoRoom {
         room.pipeline.create('WebRtcEndpoint', (error, endpoint) => {
             if (error) return console.error('Error creating Endpoint', error);
 
-            endpoint.setMaxVideoSendBandwidth(30);
-            endpoint.setMinVideoSendBandwidth(20);
+            endpoint.setMaxVideoSendBandwidth(1000);
+            endpoint.setMinVideoSendBandwidth(400);
             participant.publisher = endpoint;
 
             const candidates = participant.getCandidates(pid) || [];
@@ -77,7 +78,7 @@ module.exports = class kurentoRoom {
         this.kurento.create('MediaPipeline', (error, pipeline) => {
             if (error) return console.error('Error creating pipeline', error);
             const room = this.createAndStoreRoomObject(roomName, pipeline);
-            this.socket.join(roomName);
+            participant.socket.join(roomName);
             this.createPublisherEndpoint(room, participant);
         });
     }

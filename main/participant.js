@@ -1,4 +1,4 @@
-module.exports = class participant {
+module.exports = class Participant {
     constructor(socket, roomManager) {
         this.socket = socket;
         this.id = socket.id;
@@ -11,7 +11,7 @@ module.exports = class participant {
         this.candidates = {};
 
         socket
-        .emit('id', this.id)
+        .emit('id', {id: this.id, name: this.name})
         .on('error', id => this.leaveRoom(id))
         .on('disconnect', id => this.leaveRoom(id))
         .on('leaveRoom', id => this.leaveRoom(id))
@@ -26,9 +26,11 @@ module.exports = class participant {
 
     newSubscriberEndpoint(sender, pipeline) {
         const endpoint = pipeline.create('WebRtcEndpoint');
-        console.log(`${this.id} > successfully created subscriber endpoint`);
-        endpoint.setMaxVideoSendBandwidth(30);
-        endpoint.setMinVideoSendBandwidth(20);
+        console.log(`${this.id} > successfully created subscriber endpoint for`, sender);
+
+        endpoint.setMaxVideoRecvBandwidth(1000);
+        endpoint.setMinVideoRecvBandwidth(400);
+
         this.subscribers[sender.id] = endpoint;
 
         this.candidates[sender.id] = this.candidates[sender.id] || [];
@@ -88,10 +90,13 @@ module.exports = class participant {
     }
 
     leaveRoom() {
-        this.publisher.release();
+        const room = this.roomManager.getRoom(this.roomName);
+        const existing = room ? room.participants : {};
+
+        this.publisher && this.publisher.release();
         Object.values(this.subscribers).forEach(endpoint => endpoint.release());
-        this.roomManager.unregisterParticipant(this.id);
         this.notifyOthers('participantLeft', this.id);
+        this.roomManager.unregisterParticipant(this.id);
         console.log(`Removed participant ${this.id}`);
     }
 
@@ -121,8 +126,16 @@ module.exports = class participant {
         this.notifyOthers('newMessage', { message, from: this.name });
     }
 
+    chatParticipant(message, pid) {
+        this.notifyParticipant('newDM', message, pid);
+    }
+
     notifyClient(notification, data) {
         this.socket.emit(notification, data);
+    }
+
+    notifyParticipant(notification, data, pid) {
+        this.socket.to(pid).emit(notification, data);
     }
 
     notifyOthers(notification, data) {
