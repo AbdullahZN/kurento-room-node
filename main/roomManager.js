@@ -75,11 +75,13 @@ module.exports = class RoomManager {
     }
 
     addRoom(roomName, participant) {
-        this.kurento.create('MediaPipeline', (error, pipeline) => {
+      this.kurento.create('MediaPipeline', (error, pipeline) => {
             if (error) return console.error('Error creating pipeline', error);
             const room = this.createAndStoreRoomObject(roomName, pipeline);
-            participant.socket.join(roomName);
-            this.createPublisherEndpoint(room, participant);
+            if (participant) {
+              participant.socket.join(roomName);
+              this.createPublisherEndpoint(room, participant);
+            }
         });
     }
 

@@ -18,3 +18,9 @@ const server = https.createServer(opts, app).listen(port, (err) => {
 
 const RoomManager = require('./main/roomManager');
 const roomManager = new RoomManager(server, config.kmsUri);
+
+process.on('SIGINT', () => {
+  Object.values(roomManager.rooms).forEach(({ pipeline }) => pipeline.release());
+  console.log('\nPipelines released, Press Ctrl-C again to exit');
+  process.on('SIGINT', () => process.exit(0));
+});
