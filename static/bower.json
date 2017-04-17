@@ -1,0 +1,25 @@
+{
+  "name": "kurento-room-client-vuejs",
+  "description": "Kurento Room Client VueJs",
+  "authors": [
+    "Abdullah Uzun <abdullahzn@gmail.com>"
+  ],
+  "main": "index.html",
+  "moduleType": [
+    "globals"
+  ],
+  "license": "LGPL",
+  "homepage": "https://",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "kurento-utils": "6.0.0",
+    "eventemitter3": "^2.0.2"
+  }
+}
