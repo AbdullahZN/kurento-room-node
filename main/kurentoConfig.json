@@ -1,0 +1,13 @@
+{
+  "kmsUri":"ws://localhost:8888/kurento",
+
+  "secure" : {
+      "key":"/../keys/server.key",
+      "cert":"/../keys/server.crt"
+    },
+
+  "server": {
+    "port": 8000,
+    "uri": "https://localhost"
+  }
+}

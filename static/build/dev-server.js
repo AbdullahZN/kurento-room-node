@@ -17,6 +17,8 @@ const bodyParser = require('body-parser');
 const https = require('https');
 const fs = require('fs');
 
+const kurentoServer = require('../../main/kurentoServer');
+
 // default port where dev server listens for incoming traffic
 var port = process.env.PORT || config.dev.port
 // automatically open browser, if not set will be false
@@ -68,32 +70,12 @@ app.use(bodyParser.json());
 var staticPath = path.posix.join(config.dev.assetsPublicPath, config.dev.assetsSubDirectory)
 app.use(staticPath, express.static('./static'))
 
-var uri = 'https://localhost:' + 8443;
-
-devMiddleware.waitUntilValid(function () {
-  console.log('> Listening at ' + uri + '\n')
-})
-
-const opts = {
-  key:  fs.readFileSync('../keys/server.key'),
-  cert: fs.readFileSync('../keys/server.crt')
-};
-
-var server = https.createServer(opts, app).listen(8443, function (err) {
-  if (err) {
-    console.log(err)
-    return
-  }
+const server = kurentoServer(app);
+devMiddleware.waitUntilValid(() => console.log(`> Ready\n`));
 
   // when env is testing, don't need open it
-  if (autoOpenBrowser && process.env.NODE_ENV !== 'testing') {
-    opn(uri)
-  }
-});
-
-const kurentoRoom = require('../../main/roomManager');
-const roomManager = new kurentoRoom(server, 'ws://localhost:8888/kurento');
+if (autoOpenBrowser && process.env.NODE_ENV !== 'testing') {
+  opn(server.uri);
+}
 
 app.use(express.static(path.join(__dirname, '../')));
-
-module.exports = server;

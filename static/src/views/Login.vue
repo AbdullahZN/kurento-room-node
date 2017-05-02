@@ -26,7 +26,7 @@ export default {
     methods: {
         joinRoom() {
             this.kurento.start(this.userName, this.roomName);
-            this.$store.commit('ROUTE_TO', { name: 'chat' });
+            this.$store.commit('VIEW', 'chat');
         },
     },
 

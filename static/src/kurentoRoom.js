@@ -8,11 +8,6 @@ let participants = {};
 // Current user
 let user = {};
 
-const constraints = {
-    audio: true,
-    video: {width: {exact: 640 }, height: {exact: 480}}
-};
-
 class Participant {
     constructor({id, name}) {
         this.id = id;
@@ -22,8 +17,8 @@ class Participant {
     }
 
     leaveRoom() {
-        sendRequest('leaveRoom', user.id);
         user.endpoint.dispose();
+        socket.disconnect();
         participants = {};
     }
 
@@ -68,7 +63,6 @@ socket
 
 .on('startLocalStream', () => {
     const options = {
-        mediaConstraints: constraints,
         onicecandidate: (candidate) => sendRequest('onIceCandidate', { candidate, senderId: user.id })
     };
     user.endpoint = new kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {
@@ -111,17 +105,17 @@ socket
         });
 
         const video = document.createElement('video');
-        const stream = (participant.id !== user.id)
-            ? participant.endpoint.peerConnection.getRemoteStreams()[0]
-            : user.endpoint.peerConnection.getLocalStreams()[0]
+        const pc = participant.endpoint.peerConnection;
+        const stream = pc.getRemoteStreams()[0] || pc.getLocalStreams()[0];
 
         video.src = window.URL.createObjectURL(stream);
+        participant.video = video;
+        ee.emit('newParticipant', participant);
         document.getElementById('video-list').appendChild(video);
     });
 })
 
-
-window.onbeforeunload   = ()            => socket.disconnect();
+window.onbeforeunload   = ()            => user.leaveRoom();
 const sendRequest       = (type, data)  => socket.emit(type, data);
 const getParticipant    = (id)          => (user.id === id ? user : participants[id]);
 
@@ -130,8 +124,6 @@ const getParticipant    = (id)          => (user.id === id ? user : participants
  */
 
 export const on                    = (event, fn) => ee.on(event, fn);
-export const getParticipantList    = ()          => participants;
-export const getLocalParticipant   = ()          => user;
 export const leaveRoom             = ()          => user.leaveRoom();
 export const chatAll               = (message)   => socket.emit('chatAll', message);
 

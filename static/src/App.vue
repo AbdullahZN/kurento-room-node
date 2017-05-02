@@ -1,10 +1,10 @@
 <template>
-  <component :is='$store.state.route.name'></component>
+  <component :is='$store.state.view'></component>
 </template>
 
 <script>
-import Chat from '@/components/Chat';
-import Login from '@/components/Login';
+import Chat from '@/views/Chat';
+import Login from '@/views/Login';
 
 export default {
 

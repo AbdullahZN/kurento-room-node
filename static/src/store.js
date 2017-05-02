@@ -5,12 +5,12 @@ import Vuex from 'vuex';
 Vue.use(Vuex);
 
 const state = {
-  route: { name: 'login' },
+  view: 'login',
   kurento: kurentoRoom,
 };
 
 const mutations = {
-    ROUTE_TO: (state, route) => { state.route = route },
+    VIEW: (state, view) => (state.view = view),
 };
 
 export default new Vuex.Store({
