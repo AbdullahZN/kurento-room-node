@@ -14,7 +14,6 @@ var webpackConfig = require('./webpack.dev.conf')
 
 const url = require('url');
 const bodyParser = require('body-parser');
-const uuid = require('node-uuid');
 const https = require('https');
 const fs = require('fs');
 
