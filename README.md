@@ -1,5 +1,4 @@
-#
-kurento-room-node
+#kurento-room-node
 
 Kurento Room Implementation in NodeJS & VueJS
 
@@ -9,19 +8,19 @@ Kurento Room Implementation in NodeJS & VueJS
 
 ```
 /
-keys/ : self signed certificates
-main/ : kurento related modules
-main.js : basic kurento server implementation
+  keys/     : self signed certificates
+  main/     : kurento related modules
+  main.js   : basic kurento server implementation
 ```
 
 ###### VueJS Client
 
 ```
 static/
-build/ : webpack scripts
-config/ : webpack config
-src/
-kurentoRoom.js : kurento room client
+  build/           : webpack scripts
+  config/          : webpack config
+  src/
+    kurentoRoom.js : kurento room client
 ```
 
 ---
@@ -48,22 +47,19 @@ All the room client logic resides inside kurentoRoom.js \(cf. file structure \) 
 
 ```
 kurentoRoom.
-on(event, callback) => Event listener (see events section below)
-start(userName, roomName) => joins room and starts call
-chatAll(message) => send text chat to other participants
-leaveRoom() => leaves room
+  on(event, callback)        => Event listener (see events section below)
+  start(userName, roomName)  => joins room and starts call
+  chatAll(message)           => send text chat to other participants
+  leaveRoom()                => leaves room
 ```
 
 #### on Events
 
 List of room related events you can listen to :
 
-* 'newMessage'
-* New global chat message
-* 'newParticipant'
-* Participant joined same room
-* 'participantLeft'
-* Participant left room
+* 'newMessage'       // New global chat message
+* 'newParticipant'   // Participant joined same room
+* 'participantLeft'  // Participant left room
 
 ---
 
@@ -72,8 +68,8 @@ List of room related events you can listen to :
 to use via 'npm run' :
 
 ```
-setup // Installs all npm packages
-demo // Runs client
-init // setup && demo
-prod // Builds for production & runs server
+setup   // Installs all npm packages
+demo    // Runs client
+init    // setup && demo
+prod    // Builds for production & runs server
 ```
