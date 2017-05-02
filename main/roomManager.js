@@ -9,25 +9,21 @@ module.exports = class RoomManager {
 
         this.rooms = {};
         this.participantsById = {};
-        this.participantsByName = {};
 
         this.Ice = kurentoClient.getComplexType('IceCandidate');
     }
 
     registerParticipant(participant) {
         this.participantsById[participant.id] = participant;
-        this.participantsByName[participant.name] = participant;
     }
 
-    unregisterParticipant(id) {
+    unregisterParticipant(id, roomName) {
         const participant = this.participantsById[id];
         if (!participant) return;
-        const name = participant.name;
-        const roomName = participant.roomName;
 
-        this.removeParticipantFromRoom(roomName, id);
+        if (this.rooms[roomName])
+            delete this.rooms[roomName].participants[id];
         delete this.participantsById[id];
-        delete this.participantsByName[name];
     }
 
     createAndStoreRoomObject(roomName, pipeline) {
@@ -63,11 +59,10 @@ module.exports = class RoomManager {
             });
 
             participant.notifyClient('startLocalStream');
+            participant.notifyOthers('newParticipant', { id: pid, name: participant.name });
 
-            Object.values(room.participants).forEach((existing) => {
-                const {id: eid, name: ename } = existing;
-                participant.notifyClient('existingParticipants', { id: eid, name: ename });
-                existing.notifyClient('newParticipant', { id: pid, name: participant.name });
+            Object.values(room.participants).forEach( ({id, name}) => {
+                participant.notifyClient('existingParticipants', {id, name});
             })
 
             room.participants[pid] = participant;
@@ -78,10 +73,7 @@ module.exports = class RoomManager {
       this.kurento.create('MediaPipeline', (error, pipeline) => {
             if (error) return console.error('Error creating pipeline', error);
             const room = this.createAndStoreRoomObject(roomName, pipeline);
-            if (participant) {
-              participant.socket.join(roomName);
-              this.createPublisherEndpoint(room, participant);
-            }
+            this.createPublisherEndpoint(room, participant);
         });
     }
 
@@ -91,13 +83,10 @@ module.exports = class RoomManager {
 
     addParticipantToRoom(roomName, participant) {
         const existingRoom = this.getRoom(roomName);
+        participant.socket.join(roomName);
         existingRoom
             ? this.createPublisherEndpoint(existingRoom, participant)
             : this.addRoom(roomName, participant);
-    }
-
-    removeParticipantFromRoom(roomName, id) {
-        delete this.rooms[roomName].participants[id];
     }
 
     getParticipantById(id) {

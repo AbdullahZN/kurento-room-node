@@ -12,9 +12,9 @@ module.exports = class Participant {
 
         socket
         .emit('id', {id: this.id, name: this.name})
-        .on('error', id => this.leaveRoom(id))
-        .on('disconnect', id => this.leaveRoom(id))
-        .on('leaveRoom', id => this.leaveRoom(id))
+        .on('error', () => this.leaveRoom())
+        .on('disconnect', () => this.leaveRoom())
+        .on('leaveRoom', () => this.leaveRoom())
         .on('register', name => this.register(name))
         .on('joinRoom', roomName => this.joinRoom(roomName))
         .on('receiveOwnVideo', sdpOffer => this.receiveOwnVideo(sdpOffer))
@@ -90,13 +90,10 @@ module.exports = class Participant {
     }
 
     leaveRoom() {
-        const room = this.roomManager.getRoom(this.roomName);
-        const existing = room ? room.participants : {};
-
         this.publisher && this.publisher.release();
         Object.values(this.subscribers).forEach(endpoint => endpoint.release());
         this.notifyOthers('participantLeft', this.id);
-        this.roomManager.unregisterParticipant(this.id);
+        this.roomManager.unregisterParticipant(this.id, this.roomName);
         console.log(`Removed participant ${this.id}`);
     }
 
@@ -134,12 +131,12 @@ module.exports = class Participant {
         this.socket.emit(notification, data);
     }
 
-    notifyParticipant(notification, data, pid) {
-        this.socket.to(pid).emit(notification, data);
+    notifyOthers(notification, data) {
+      this.socket.to(this.roomName).emit(notification, data);
     }
 
-    notifyOthers(notification, data) {
-        this.socket.to(this.roomName).emit(notification, data);
+    notifyParticipant(notification, data, pid) {
+        this.socket.to(pid).emit(notification, data);
     }
 
     getCandidates(id) {
