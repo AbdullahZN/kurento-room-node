@@ -1,4 +1,7 @@
 import io from 'socket.io-client';
+import EventEmitter from 'event-emitter3';
+import kurentoUtils from 'kurento-utils';
+
 const socket = io.connect();
 const ee = new EventEmitter();
 
