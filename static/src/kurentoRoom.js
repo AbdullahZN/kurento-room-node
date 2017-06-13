@@ -65,7 +65,7 @@ socket
     const options = {
         onicecandidate: (candidate) => sendRequest('onIceCandidate', { candidate, senderId: user.id })
     };
-    user.endpoint = new kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {
+    user.endpoint = new kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function(error) {
         if (error) return console.error(error);
         this.generateOffer((error, sdpOffer) => sendRequest('receiveOwnVideo', sdpOffer));
     });

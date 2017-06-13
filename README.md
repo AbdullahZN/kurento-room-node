@@ -1,9 +1,33 @@
-#kurento-room-node
+# kurento-room-node
 
-Kurento Room Implementation in NodeJS & VueJS
+Kurento Room Server in NodeJS
+
+### Requirements
+Install package from npm or yarn
+```bash
+> npm install kurento-room-server || yarn add kurento-room-server
+```
+
+### Usage
+
+The server is a simple module designed to work on top of ExpressJS, and requires loading a JSON config file.
+
+Here's a basic use case, you can find an example config file in main/kurentoConfig.json
+
+A demo client implementation can be found in static/ folder
+
+```
+const path = require('path');
+const express = require('express');
+const kurentoServer = require('kurento-room-server');
+const config = require('./main/kurentoConfig.json');
+
+const app = express();
+const roomManager = kurentoServer(app, config);
+app.use(express.static(path.join(__dirname, './dist')));
+```
 
 ### File structure
-
 ###### NodeJS Server
 
 ```
@@ -23,24 +47,6 @@ static/
     kurentoRoom.js : kurento room client
 ```
 
----
-
-## Server
-
-The server is a simple module designed to work on top of ExpressJS.
-
-Here's a simple use case found in main.js. The same process can be used inside a dev environment.
-
-```
-const path = require('path');
-const express = require('express');
-const kurentoServer = require('./main/kurentoServer');
-const app = express();
-
-kurentoServer(app);
-app.use(express.static(path.join(__dirname, './static')));
-```
-
 ## Client
 
 All the room client logic resides inside kurentoRoom.js \(cf. file structure \) and exports core functionalities as follows
@@ -51,25 +57,4 @@ kurentoRoom.
   start(userName, roomName)  => joins room and starts call
   chatAll(message)           => send text chat to other participants
   leaveRoom()                => leaves room
-```
-
-#### on Events
-
-List of room related events you can listen to :
-
-* 'newMessage'       // New global chat message
-* 'newParticipant'   // Participant joined same room
-* 'participantLeft'  // Participant left room
-
----
-
-### NPM Scripts
-
-to use via 'npm run' :
-
-```
-setup   // Installs all npm packages
-demo    // Runs client
-init    // setup && demo
-prod    // Builds for production & runs server
 ```
