@@ -70,12 +70,7 @@ app.use(bodyParser.json());
 var staticPath = path.posix.join(config.dev.assetsPublicPath, config.dev.assetsSubDirectory)
 app.use(staticPath, express.static('./static'))
 
-const server = kurentoServer(app);
+kurentoServer(app);
 devMiddleware.waitUntilValid(() => console.log(`> Ready\n`));
-
-  // when env is testing, don't need open it
-if (autoOpenBrowser && process.env.NODE_ENV !== 'testing') {
-  opn(server.uri);
-}
 
 app.use(express.static(path.join(__dirname, '../')));

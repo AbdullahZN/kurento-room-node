@@ -19,14 +19,13 @@ export default {
         return {
             userName: '',
             roomName: '',
-            kurento: this.$store.state.kurento
         };
     },
 
     methods: {
         joinRoom() {
-            this.kurento.start(this.userName, this.roomName);
-            this.$store.commit('VIEW', 'chat');
+            this.$store.dispatch('start', { user: this.userName, room: this.roomName });
+            this.$store.commit('updateView', 'chat');
         },
     },
 

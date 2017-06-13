@@ -17,46 +17,43 @@ class Participant {
         this.name = name;
         this.endpoint = null;
         this.candidates = [];
+        this.src = null;
     }
 
-    leaveRoom() {
+    leaveRoom(disconnect = false) {
         user.endpoint.dispose();
-        socket.disconnect();
+        Object.values(participants).forEach(p => p.dispose());
+        sendRequest('leaveRoom');
+        disconnect && socket.disconnect();
         participants = {};
     }
 
     receiveRemoteVideo(newParticipant) {
-        console.log(`${this.id} receiving video from ${newParticipant.id}`);
+      const participant = new Participant(newParticipant);
+      participants[newParticipant.id] = participant;
 
-            const participant = new Participant(newParticipant);
-            participants[newParticipant.id] = participant;
-            participant.name = newParticipant.name;
+      const options = {
+          onicecandidate: (candidate) => sendRequest('onIceCandidate', { candidate, senderId: newParticipant.id })
+      };
 
-            const options = {
-                onicecandidate: (candidate) => sendRequest('onIceCandidate', { candidate, senderId: newParticipant.id })
-            };
+      participant.endpoint = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function (error) {
+          if (error) return console.error(error);
 
-            participant.endpoint = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function (error) {
-                if (error) return console.error(error);
-
-                this.generateOffer((error, sdpOffer) => {
-                    sendRequest('receiveRemoteVideo', { senderId: newParticipant.id, sdpOffer: sdpOffer });
-                });
-            });
+          this.generateOffer((error, sdpOffer) => {
+              sendRequest('receiveRemoteVideo', { senderId: newParticipant.id, sdpOffer: sdpOffer });
+          });
+      });
     }
 
     dispose() {
-        console.log(`Disposing participant ${this.id}`);
+        if (!this.endpoint) return;
         this.endpoint.dispose();
         this.endpoint = null;
     }
 };
 
 socket
-.on('id', currentUser => {
-    console.log(`receive id : ${currentUser.id}`);
-    user = new Participant(currentUser);
-})
+.on('id', currentUser => { user = new Participant(currentUser) })
 
 .on('registered', msg => console.log(msg))
 
@@ -74,47 +71,36 @@ socket
     });
 })
 
-.on('existingParticipants', participant => {
-    console.log('Current room participant', participant);
-    user.receiveRemoteVideo(participant);
-})
+.on('existingParticipants', participant => user.receiveRemoteVideo(participant))
 
-.on('iceCandidate', ({sessionId, candidate}) => {
-    console.log(`iceCandidate from ${sessionId}`);
+.on('iceCandidate', ({ sessionId, candidate }) => {
     const participant = getParticipant(sessionId);
-    participant.endpoint.addIceCandidate(candidate, error =>
-        error && console.error("Error adding candidate to self : " + error)
-    );
+    participant.endpoint.addIceCandidate(candidate, error => error && console.error(error));
 })
 
 .on('participantLeft', participantId => {
-    console.log(`participantLeft : ${participantId}`);
     ee.emit('participantLeft', participantId);
     const participant = getParticipant(participantId);
+    if (!participant) return console.log(`participant with id ${participantId} not found`);
     participant.dispose();
     delete participants[participantId];
 })
 
 .on('receiveVideoAnswer', ({ sessionId, sdpAnswer }) => {
-    console.log(`receiveVideoAnswer from : ${sessionId}`, sdpAnswer);
     const participant = getParticipant(sessionId);
 
     participant.endpoint.processAnswer(sdpAnswer, function (error) {
         if (error) return console.error('Error processing Answer', error);
 
         participant.candidates.forEach(() => {
-            console.log(`Collected : ${participant.id} ICE candidate`);
             participant.endpoint.addIceCandidate(participant.candidates.shift());
         });
 
-        const video = document.createElement('video');
         const pc = participant.endpoint.peerConnection;
-        const stream = pc.getRemoteStreams()[0] || pc.getLocalStreams()[0];
+        const stream = (pc.getRemoteStreams()[0] || pc.getLocalStreams()[0]);
 
-        video.src = window.URL.createObjectURL(stream);
-        participant.video = video;
+        participant.src = window.URL.createObjectURL(stream);
         ee.emit('newParticipant', participant);
-        document.getElementById('video-list').appendChild(video);
     });
 })
 

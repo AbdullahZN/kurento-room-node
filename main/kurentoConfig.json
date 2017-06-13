@@ -2,12 +2,12 @@
   "kmsUri":"ws://localhost:8888/kurento",
 
   "secure" : {
-      "key":"/../keys/server.key",
-      "cert":"/../keys/server.crt"
+      "key":"/home/ubuntu/.w/kurento-room-node/keys/server.key",
+      "cert":"/home/ubuntu/.w/kurento-room-node/keys/server.crt"
     },
 
   "server": {
-    "port": 8000,
+    "port": 8443,
     "uri": "https://localhost"
   }
 }

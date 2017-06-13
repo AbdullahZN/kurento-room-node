@@ -2,7 +2,7 @@
   "name": "kurento-room-server-nodejs",
   "version": "1.0.0",
   "description": "Kurento Room Server implementation in NodeJS",
-  "main": "main.js",
+  "main": "./main/kurentoServer.js",
   "scripts": {
     "setup": "npm i && cd static && npm i",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -14,15 +14,19 @@
     "node",
     "kurento",
     "room",
+    "group call",
+    "nodejs",
+    "kurento room",
+    "webrtc group",
+    "webrtc room",
     "webrtc"
   ],
   "author": "Abdullah Uzun",
   "license": "ISC",
   "devDependencies": {
-    "express": "^4.15.2",
+    "express": "^4.15.3",
     "kurento-client": "^6.6.0",
     "path": "^0.12.7",
-    "socket.io": "^1.7.3",
-    "url": "^0.11.0"
+    "socket.io": "^1.7.3"
   }
 }

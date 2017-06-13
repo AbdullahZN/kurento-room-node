@@ -26,25 +26,24 @@ module.exports = class Participant {
 
     newSubscriberEndpoint(sender, pipeline) {
         const endpoint = pipeline.create('WebRtcEndpoint');
-        console.log(`${this.id} > successfully created subscriber endpoint for`, sender);
+        endpoint.then((endpoint) => {
+          console.log(`${this.id} > successfully created subscriber endpoint for`, sender);
 
-        endpoint.setMaxVideoRecvBandwidth(1000);
-        endpoint.setMinVideoRecvBandwidth(400);
+          endpoint.setMaxVideoRecvBandwidth(300);
+          endpoint.setMinVideoRecvBandwidth(300);
 
-        this.subscribers[sender.id] = endpoint;
+          this.subscribers[sender.id] = endpoint;
 
-        this.candidates[sender.id] = this.candidates[sender.id] || [];
-        this.candidates[sender.id].forEach((candidate) => {
-            console.log(`${this.id} collect candidate for : ${sender.id}`);
-            endpoint.addIceCandidate(candidate);
-        });
+          this.candidates[sender.id] = this.candidates[sender.id] || [];
+          this.candidates[sender.id].forEach(({candidate}) => {
+              endpoint.addIceCandidate(candidate);
+          });
 
-        endpoint.on('OnIceCandidate', (event) => {
-            console.log(`${this.id} > generate subscriber candidate from ${sender.id}`);
-            const candidate = this.roomManager.Ice(event.candidate);
-            this.notifyClient('iceCandidate', {sessionId: sender.id, candidate: candidate});
-        });
-
+          endpoint.on('OnIceCandidate', (event) => {
+              const candidate = this.roomManager.Ice(event.candidate);
+              this.notifyClient('iceCandidate', {sessionId: sender.id, candidate: candidate});
+          });
+      });
         return endpoint;
     }
 
@@ -52,7 +51,6 @@ module.exports = class Participant {
         const senderId = sender.id;
         sender.publisher.connect(endpoint);
         endpoint.processOffer(sdpOffer, (error, sdpAnswer) => {
-            console.log(`${this.id} > processing offer from ${sender.id}`);
             if (error) return console.error("Error in Processing offer", error);
             this.notifyClient('receiveVideoAnswer', { sessionId: senderId, sdpAnswer: sdpAnswer });
             endpoint.gatherCandidates((error) => error && console.error("Error gathering candidates", error));
@@ -73,32 +71,24 @@ module.exports = class Participant {
 
     addSubsriberCandidate(senderId, candidate) {
         const subscriber = this.subscribers[senderId];
-
         subscriber
             ? subscriber.addIceCandidate(candidate)
             : this.candidates[senderId].push({ candidate: candidate });
-
-        console.log(`${this.id} > Adding candidate from ${senderId}`);
     }
 
     addPublisherCandidate(senderId, candidate) {
         this.publisher
             ? this.publisher.addIceCandidate(candidate)
             : this.candidates[senderId].push({ candidate: candidate });
-
-        console.log(`${this.id} > Adding own candidate`);
     }
 
     leaveRoom() {
-        this.publisher && this.publisher.release();
-        Object.values(this.subscribers).forEach(endpoint => endpoint.release());
         this.notifyOthers('participantLeft', this.id);
-        this.roomManager.unregisterParticipant(this.id, this.roomName);
-        console.log(`Removed participant ${this.id}`);
+        this.releaseEndpoints();
+        roomManager.unregisterParticipant(this.id, this.roomName);
     }
 
     register(name) {
-        console.log(`${this.id} > registered with name ${name}`);
         this.name = name;
         this.roomManager.registerParticipant(this);
         this.notifyClient('registered', `Successfully registered ${this.id}`);
@@ -123,10 +113,6 @@ module.exports = class Participant {
         this.notifyOthers('newMessage', { message, from: this.name });
     }
 
-    chatParticipant(message, pid) {
-        this.notifyParticipant('newDM', message, pid);
-    }
-
     notifyClient(notification, data) {
         this.socket.emit(notification, data);
     }
@@ -135,15 +121,12 @@ module.exports = class Participant {
       this.socket.to(this.roomName).emit(notification, data);
     }
 
-    notifyParticipant(notification, data, pid) {
-        this.socket.to(pid).emit(notification, data);
-    }
 
     getCandidates(id) {
-        return this.candidates[id];
+        return this.candidates[id] || null;
     }
 
     getSubscriber(id) {
-        return this.subscribers[id];
+        return this.subscribers[id] || null;
     }
 }

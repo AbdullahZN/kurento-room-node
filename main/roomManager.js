@@ -18,12 +18,18 @@ module.exports = class RoomManager {
     }
 
     unregisterParticipant(id, roomName) {
-        const participant = this.participantsById[id];
-        if (!participant) return;
+        const participant = this.participantsById[id] || null;
+        const room = this.rooms[roomName];
+        if (!participant || !room) return;
 
-        if (this.rooms[roomName])
-            delete this.rooms[roomName].participants[id];
-        delete this.participantsById[id];
+        delete room.participants[id];
+        // Release subscriber endpoint of other participants
+        Object.values(room.participants).forEach(other => {
+            if (other.subscribers[id]) {
+              other.subscribers[id].release();
+              delete other.subscribers[id];
+          };
+        });
     }
 
     createAndStoreRoomObject(roomName, pipeline) {
@@ -41,31 +47,29 @@ module.exports = class RoomManager {
         room.pipeline.create('WebRtcEndpoint', (error, endpoint) => {
             if (error) return console.error('Error creating Endpoint', error);
 
-            endpoint.setMaxVideoSendBandwidth(1000);
-            endpoint.setMinVideoSendBandwidth(400);
+            endpoint.setMaxVideoSendBandwidth(300);
+            endpoint.setMinVideoSendBandwidth(300);
             participant.publisher = endpoint;
 
             const candidates = participant.getCandidates(pid) || [];
             candidates.forEach(() => {
-                console.log(`${pid} collect candidate for publisher endpoint`);
                 participant.publisher.addIceCandidate(candidates.shift().candidate);
             });
 
-            participant.publisher.on('OnIceCandidate', ({candidate}) => {
+            participant.publisher.on('OnIceCandidate', ({ candidate }) => {
                 participant.notifyClient('iceCandidate', {
                     sessionId: pid,
                     candidate: this.Ice(candidate)
                 });
             });
 
-            participant.notifyClient('startLocalStream');
-            participant.notifyOthers('newParticipant', { id: pid, name: participant.name });
-
-            Object.values(room.participants).forEach( ({id, name}) => {
-                participant.notifyClient('existingParticipants', {id, name});
-            })
+            Object.values(room.participants).forEach( ({ id, name }) => {
+                participant.notifyClient('existingParticipants', { id, name });
+            });
 
             room.participants[pid] = participant;
+            participant.notifyClient('startLocalStream');
+            participant.notifyOthers('newParticipant', { id: pid, name: participant.name });
         });
     }
 
@@ -73,7 +77,7 @@ module.exports = class RoomManager {
       this.kurento.create('MediaPipeline', (error, pipeline) => {
             if (error) return console.error('Error creating pipeline', error);
             const room = this.createAndStoreRoomObject(roomName, pipeline);
-            this.createPublisherEndpoint(room, participant);
+            participant && this.createPublisherEndpoint(room, participant);
         });
     }
 
