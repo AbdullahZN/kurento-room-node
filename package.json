@@ -1,6 +1,6 @@
 {
   "name": "kurento-room-server",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Kurento Room Server implementation in NodeJS",
   "main": "./main/kurentoServer.js",
   "scripts": {
