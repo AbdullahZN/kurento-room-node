@@ -27,7 +27,7 @@ module.exports = class Participant {
     newSubscriberEndpoint(sender, pipeline) {
         const endpoint = pipeline.create('WebRtcEndpoint');
         endpoint.then((endpoint) => {
-          console.log(`${this.id} > successfully created subscriber endpoint for`, sender);
+          console.log(`${this.id} > successfully created subscriber endpoint for ${sender.id}`);
 
           endpoint.setMaxVideoRecvBandwidth(300);
           endpoint.setMinVideoRecvBandwidth(300);
@@ -85,7 +85,14 @@ module.exports = class Participant {
     leaveRoom() {
         this.notifyOthers('participantLeft', this.id);
         this.releaseEndpoints();
-        roomManager.unregisterParticipant(this.id, this.roomName);
+        this.roomManager.unregisterParticipant(this.id, this.roomName);
+    }
+
+    releaseEndpoints() {
+        this.publisher && this.publisher.release();
+        Object.values(this.subscribers).forEach( endpoint => endpoint.release() );
+        this.publisher = null;
+        this.subscribers = {};
     }
 
     register(name) {
