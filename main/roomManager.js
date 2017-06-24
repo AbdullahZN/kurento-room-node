@@ -1,107 +1,74 @@
 const io            = require('socket.io');
-const kurentoClient = require('kurento-client');
-const Participant   = require('./participant');
+const Participant   = require('./Participant');
+const Kms           = require('./Kms');
 
-module.exports = class RoomManager {
+module.exports = class kurentoRoom {
     constructor(server, kmsUri) {
-        this.kurento = kurentoClient(kmsUri);
-        io(server).on('connection', socket => new Participant(socket, this));
+        server && this.initSocketConnection(server);
+        this.kms = new Kms(kmsUri);
+        this.participantsByRoom = { /*  roomName: [] */ };
+        this.participantsById = { /*  id : participant  */ };
+        this.totalParticipants = 0;
+    }
 
-        this.rooms = {};
-        this.participantsById = {};
-
-        this.Ice = kurentoClient.getComplexType('IceCandidate');
+    initSocketConnection(server) {
+      io(server).on('connection', socket => new Participant(socket, this));
     }
 
     registerParticipant(participant) {
-        this.participantsById[participant.id] = participant;
+        this.participantsById[participant.getId()] = participant;
     }
 
     unregisterParticipant(id, roomName) {
-        const participant = this.participantsById[id] || null;
-        const room = this.rooms[roomName];
-        if (!participant || !room) return;
-
-        delete room.participants[id];
-        // Release subscriber endpoint of other participants
-        Object.values(room.participants).forEach(other => {
-            if (other.subscribers[id]) {
-              other.subscribers[id].release();
-              delete other.subscribers[id];
-          };
-        });
+        const list = this.getParticipantsByRoom(roomName);
+        this.participantsByRoom[roomName] = list.filter(participant => participant.id != id);
     }
 
-    createAndStoreRoomObject(roomName, pipeline) {
+    setRoomParticipantList(roomName) {
         console.log(`Created new room ${roomName}`);
-        this.rooms[roomName] = {
-            name: roomName,
-            pipeline: pipeline,
-            participants: {}
-        };
-        return this.rooms[roomName];
+        this.participantsByRoom[roomName] = [ /* participant : name */ ];
     }
 
-    createPublisherEndpoint(room, participant) {
-        const pid = participant.id;
-        room.pipeline.create('WebRtcEndpoint', (error, endpoint) => {
-            if (error) return console.error('Error creating Endpoint', error);
-
-            endpoint.setMaxVideoSendBandwidth(300);
-            endpoint.setMinVideoSendBandwidth(300);
-            participant.publisher = endpoint;
-
-            const candidates = participant.getCandidates(pid) || [];
-            candidates.forEach(() => {
-                participant.publisher.addIceCandidate(candidates.shift().candidate);
-            });
-
-            participant.publisher.on('OnIceCandidate', ({ candidate }) => {
-                participant.notifyClient('iceCandidate', {
-                    sessionId: pid,
-                    candidate: this.Ice(candidate)
-                });
-            });
-
-            Object.values(room.participants).forEach( ({ id, name }) => {
-                participant.notifyClient('existingParticipants', { id, name });
-            });
-
-            room.participants[pid] = participant;
-            participant.notifyClient('startLocalStream');
-            participant.notifyOthers('newParticipant', { id: pid, name: participant.name });
-        });
+    createPublisherEndpoint(roomName, participant) {
+        return this.kms.newWebRtcEndpoint(roomName);
     }
 
-    addRoom(roomName, participant) {
-      this.kurento.create('MediaPipeline', (error, pipeline) => {
-            if (error) return console.error('Error creating pipeline', error);
-            const room = this.createAndStoreRoomObject(roomName, pipeline);
-            participant && this.createPublisherEndpoint(room, participant);
-        });
-    }
-
-    getRoom(roomName) {
-      return this.rooms[roomName] || null;
+    newPipeline(roomName, participant) {
+        return this.kms
+            .newPipeline(roomName)
+            .then(pipeline => this.setRoomParticipantList(roomName))
+            .catch(err => { throw new Error('Error creating pipeline', error) });
     }
 
     addParticipantToRoom(roomName, participant) {
-        const existingRoom = this.getRoom(roomName);
-        participant.socket.join(roomName);
-        existingRoom
-            ? this.createPublisherEndpoint(existingRoom, participant)
-            : this.addRoom(roomName, participant);
+        if (!participant) return;
+
+        return (this.getPipeline(roomName) || this.newPipeline(roomName))
+            .catch((err) => console.log(err))
+            .then(() => this.createPublisherEndpoint(roomName, participant))
+            .then(endpoint => {
+                roomParticipants.push(participant.getState());
+                return endpoint;
+            });
+    }
+
+    getPipeline(roomName) {
+        return this.kms.pipelines[roomName] || null;
     }
 
     getParticipantById(id) {
-      return this.participantsById[id] || null;
-    }
-
-    getParticipantByName(name) {
-        return this.participantsByName[name] || null;
+        return this.participantsById[id] || null;
     }
 
     getParticipantsByRoom(roomName) {
-        return this.rooms[roomName] ? this.rooms[roomName].participants : null;
+        return this.participantsByRoom[roomName] || null;
+    }
+
+    getEveryParticipants() {
+        return this.participantsByRoom;
+    }
+
+    getKms() {
+        return this.kms;
     }
 }
