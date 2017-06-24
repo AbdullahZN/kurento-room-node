@@ -70,7 +70,8 @@ app.use(bodyParser.json());
 var staticPath = path.posix.join(config.dev.assetsPublicPath, config.dev.assetsSubDirectory)
 app.use(staticPath, express.static('./static'))
 
-kurentoServer(app);
+const kConfig = require('../../main/kurentoConfig.json');
+kurentoServer(app, kConfig);
 devMiddleware.waitUntilValid(() => console.log(`> Ready\n`));
 
 app.use(express.static(path.join(__dirname, '../')));

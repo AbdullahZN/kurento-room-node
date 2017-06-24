@@ -1,6 +1,6 @@
 {
   "name": "kurento-room-server",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Kurento Room Server implementation in NodeJS",
   "main": "./main/kurentoServer.js",
   "scripts": {
@@ -21,6 +21,10 @@
     "webrtc room",
     "webrtc"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AbdullahZN/kurento-room-node.git"
+  },
   "author": "Abdullah Uzun",
   "license": "MIT",
   "dependencies": {
@@ -30,5 +34,9 @@
   "devDependencies": {
     "express": "^4.15.3",
     "path": "^0.12.7"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/AbdullahZN/kurento-room-node/issues"
+  },
+  "homepage": "https://github.com/AbdullahZN/kurento-room-node#readme"
 }

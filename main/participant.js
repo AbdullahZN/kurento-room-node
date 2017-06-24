@@ -114,6 +114,13 @@ module.exports = class Participant {
         this.roomManager.unregisterParticipant(pid, this.roomName);
     }
 
+    releaseEndpoints() {
+        this.publisher && this.publisher.release();
+        Object.values(this.subscribers).forEach( endpoint => endpoint.release() );
+        this.publisher = null;
+        this.subscribers = {};
+    }
+
     register({ name, prono }) {
         const uid = this.getId();
         console.log(`registering ${uid} with name ${name}`);
