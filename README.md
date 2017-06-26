@@ -16,7 +16,7 @@ Here's a basic use case, you can find an example config file in main/kurentoConf
 
 A demo client implementation can be found in static/ folder
 
-```
+```js
 const path = require('path');
 const express = require('express');
 const kurentoServer = require('kurento-room-server');
