@@ -1,6 +1,6 @@
 # kurento-room-node
 
-Kurento Room Server in NodeJS
+Kurento Room Server in NodeJS [![Code Climate](https://codeclimate.com/github/AbdullahZN/kurento-room-node/badges/gpa.svg)](https://codeclimate.com/github/AbdullahZN/kurento-room-node)
 
 ### Requirements
 Install package from npm or yarn
