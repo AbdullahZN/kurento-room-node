@@ -1,5 +1,3 @@
-const MAX_BANDWITH = 300;
-const MIN_BANDWITH = 300;
 
 module.exports = class Participant {
     constructor(socket, roomManager) {
@@ -22,14 +20,14 @@ module.exports = class Participant {
         .emit('id', { id: this.state.id, name: this.state.name })
 
         .on('error', () => this.leaveRoom())
-        .on('disconnect', () => this.leaveRoom())
         .on('leaveRoom', () => this.leaveRoom())
+        .on('disconnect', () => this.leaveRoom())
 
+        .on('chatAll', message => this.chatAll(message))
         .on('register', payload => this.register(payload))
         .on('joinRoom', roomName => this.joinRoom(roomName))
         .on('receiveVideo', payload => this.receiveVideo(payload))
-        .on('onIceCandidate', payload => this.onIceCandidate(payload))
-        .on('chatAll', message => this.chatAll(message));
+        .on('onIceCandidate', payload => this.onIceCandidate(payload));
         console.log(`Received new client : ${this.state.id}`);
     }
 
@@ -112,13 +110,6 @@ module.exports = class Participant {
         this.releaseEndpoints();
         this.candidates = {};
         this.roomManager.unregisterParticipant(pid, this.roomName);
-    }
-
-    releaseEndpoints() {
-        this.publisher && this.publisher.release();
-        Object.values(this.subscribers).forEach( endpoint => endpoint.release() );
-        this.publisher = null;
-        this.subscribers = {};
     }
 
     register({ name, prono }) {
@@ -224,7 +215,7 @@ module.exports = class Participant {
     setState(obj) {
         Object.keys(obj)
           .filter(key => this.state.hasOwnProperty(key))
-          .forEach(key => this.state[key] = obj[key]);
+          .forEach(key => { this.state[key] = obj[key] });
     }
 
 }

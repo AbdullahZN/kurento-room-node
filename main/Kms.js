@@ -20,7 +20,7 @@ module.exports = class Kms {
 
   newPipeline(name) {
     return this.kurento.create('MediaPipeline')
-      .then(pipeline => this.pipelines[name] = pipeline)
+      .then(pipeline => { this.pipelines[name] = pipeline });
   }
 
   getPipeline(name) {

@@ -4,11 +4,10 @@ const Kms           = require('./Kms');
 
 module.exports = class kurentoRoom {
     constructor(server, kmsUri) {
-        server && this.initSocketConnection(server);
+        if (server) this.initSocketConnection(server);
         this.kms = new Kms(kmsUri);
         this.participantsByRoom = { /*  roomName: [] */ };
         this.participantsById = { /*  id : participant  */ };
-        this.totalParticipants = 0;
     }
 
     initSocketConnection(server) {
@@ -21,7 +20,7 @@ module.exports = class kurentoRoom {
 
     unregisterParticipant(id, roomName) {
         const list = this.getParticipantsByRoom(roomName);
-        this.participantsByRoom[roomName] = list.filter(participant => participant.id != id);
+        this.participantsByRoom[roomName] = list.filter(participant => participant.id !== id);
     }
 
     setRoomParticipantList(roomName) {
@@ -37,7 +36,7 @@ module.exports = class kurentoRoom {
         return this.kms
             .newPipeline(roomName)
             .then(pipeline => this.setRoomParticipantList(roomName))
-            .catch(err => { throw new Error('Error creating pipeline', error) });
+            .catch(err => console.error(err));
     }
 
     addParticipantToRoom(roomName, participant) {
