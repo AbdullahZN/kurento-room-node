@@ -2,8 +2,8 @@
   "kmsUri":"ws://localhost:8888/kurento",
 
   "secure" : {
-      "key":"/home/ubuntu/.w/kurento-room-node/keys/server.key",
-      "cert":"/home/ubuntu/.w/kurento-room-node/keys/server.crt"
+      "key":"../keys/server.key",
+      "cert":"../keys/server.crt"
     },
 
   "server": {

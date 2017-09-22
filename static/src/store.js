@@ -12,12 +12,8 @@ const state = {
 const mutations = {
     updateView: (state, view) => (state.view = view),
 
-    addParticipant: (state, participant) => {
-        Vue.set(state.participants, participant.id, {
-            id: participant.id,
-            name: participant.name,
-            src: participant.src,
-        });
+    addParticipant: (state, { id, src }) => {
+        Vue.set(state.participants, id, { id, src });
     },
 
     removeParticipant(state, participantId) {
@@ -26,7 +22,9 @@ const mutations = {
 };
 
 const actions = {
-  start: (store, { user, room }) => kurentoRoom.start(user, room)
+  start(store, { user, room }) {
+    kurentoRoom.start(user, room);
+  }
 }
 
 const store = new Vuex.Store({ strict: true, state, mutations, actions });

@@ -12,9 +12,8 @@ let participants = {};
 let user = {};
 
 class Participant {
-    constructor({id, name}) {
+    constructor({ id }) {
         this.id = id;
-        this.name = name;
         this.endpoint = null;
         this.candidates = [];
         this.src = null;
@@ -28,21 +27,27 @@ class Participant {
         participants = {};
     }
 
+    createParticipant(remoteParticipant) {
+        const participant = new Participant(remoteParticipant);
+        participants[remoteParticipant.id] = participant;
+        return participant;
+    }
+
     receiveRemoteVideo(newParticipant) {
-      const participant = new Participant(newParticipant);
-      participants[newParticipant.id] = participant;
+        const senderId = newParticipant.id;
+        const participant = (user.id === senderId) ? user : this.createParticipant(newParticipant);
 
-      const options = {
-          onicecandidate: (candidate) => sendRequest('onIceCandidate', { candidate, senderId: newParticipant.id })
-      };
-
-      participant.endpoint = kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options, function (error) {
-          if (error) return console.error(error);
-
-          this.generateOffer((error, sdpOffer) => {
-              sendRequest('receiveRemoteVideo', { senderId: newParticipant.id, sdpOffer: sdpOffer });
-          });
-      });
+        const options = {
+            onicecandidate(candidate) {
+                sendRequest('onIceCandidate', { candidate, senderId });
+            }
+        };
+        const peerType = (user.id === senderId) ? 'WebRtcPeerSendonly' : 'WebRtcPeerRecvonly';
+        participant.endpoint = kurentoUtils.WebRtcPeer[peerType](options, function (error) {
+            if (error)
+                return console.error(error);
+            this.generateOffer((error, sdpOffer) => sendRequest('receiveVideo', { senderId, sdpOffer }));
+        });
     }
 
     dispose() {
@@ -61,36 +66,30 @@ socket
 
 .on('newParticipant', newParticipant => user.receiveRemoteVideo(newParticipant))
 
-.on('startLocalStream', () => {
-    const options = {
-        onicecandidate: (candidate) => sendRequest('onIceCandidate', { candidate, senderId: user.id })
-    };
-    user.endpoint = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function(error) {
-        if (error) return console.error(error);
-        this.generateOffer((error, sdpOffer) => sendRequest('receiveOwnVideo', sdpOffer));
-    });
-})
-
-.on('existingParticipants', participant => user.receiveRemoteVideo(participant))
+.on('existingParticipants', participants => participants.forEach(p => user.receiveRemoteVideo(p)))
 
 .on('iceCandidate', ({ sessionId, candidate }) => {
-    const participant = getParticipant(sessionId);
-    participant.endpoint.addIceCandidate(candidate, error => error && console.error(error));
+    console.log("got iceCandidate", candidate);
+    getParticipant(sessionId)
+        .endpoint
+        .addIceCandidate(candidate, error => error && console.error(error));
 })
 
 .on('participantLeft', participantId => {
     ee.emit('participantLeft', participantId);
     const participant = getParticipant(participantId);
-    if (!participant) return console.log(`participant with id ${participantId} not found`);
+    if (!participant)
+        return console.log(`participant with id ${participantId} not found`);
     participant.dispose();
     delete participants[participantId];
 })
 
-.on('receiveVideoAnswer', ({ sessionId, sdpAnswer }) => {
-    const participant = getParticipant(sessionId);
+.on('gotAnswer', ({ senderId, sdpAnswer }) => {
+    const participant = getParticipant(senderId);
 
     participant.endpoint.processAnswer(sdpAnswer, function (error) {
-        if (error) return console.error('Error processing Answer', error);
+        if (error)
+            return console.error('Error processing Answer', error);
 
         participant.candidates.forEach(() => {
             participant.endpoint.addIceCandidate(participant.candidates.shift());

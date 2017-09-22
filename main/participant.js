@@ -1,4 +1,3 @@
-
 module.exports = class Participant {
     constructor(socket, roomManager) {
         this.socket = socket;
@@ -12,30 +11,54 @@ module.exports = class Participant {
 
         this.state = {
             id: socket.id,
-            name: null,
-            prono: null
+            name: null
         };
 
         socket
-        .emit('id', { id: this.state.id, name: this.state.name })
+            .emit('id', { id: this.state.id })
 
         .on('error', () => this.leaveRoom())
-        .on('leaveRoom', () => this.leaveRoom())
-        .on('disconnect', () => this.leaveRoom())
+            .on('leaveRoom', () => this.leaveRoom())
+            .on('disconnect', () => this.leaveRoom())
 
         .on('chatAll', message => this.chatAll(message))
-        .on('register', payload => this.register(payload))
-        .on('joinRoom', roomName => this.joinRoom(roomName))
-        .on('receiveVideo', payload => this.receiveVideo(payload))
-        .on('onIceCandidate', payload => this.onIceCandidate(payload));
+            .on('register', payload => this.register(payload))
+            .on('joinRoom', roomName => this.joinRoom(roomName))
+            .on('receiveVideo', payload => this.receiveVideo(payload))
+            .on('onIceCandidate', payload => this.onIceCandidate(payload));
         console.log(`Received new client : ${this.state.id}`);
     }
 
     addCandidatesToEndpoint(senderId, endpoint) {
-        this.getCandidates(senderId)
-            .forEach(({ candidate }) => endpoint.addIceCandidate(candidate));
+        this.getCandidates(senderId).forEach(({ candidate }) =>
+            endpoint.addIceCandidate(candidate)
+        );
         return this;
     }
+
+    newSubscriberEndpoint(sender, pipeline) {
+        const endpoint = pipeline.create('WebRtcEndpoint');
+        endpoint.then((endpoint) => {
+            console.log(`${this.id} > successfully created subscriber endpoint for ${sender.id}`);
+
+            endpoint.setMaxVideoRecvBandwidth(300);
+            endpoint.setMinVideoRecvBandwidth(300);
+
+            this.subscribers[sender.id] = endpoint;
+
+            this.candidates[sender.id] = this.candidates[sender.id] || [];
+            this.candidates[sender.id].forEach(({ candidate }) => {
+                endpoint.addIceCandidate(candidate);
+            });
+
+            endpoint.on('OnIceCandidate', (event) => {
+                const candidate = this.roomManager.Ice(event.candidate);
+                this.notifyClient('iceCandidate', { sessionId: sender.id, candidate: candidate });
+            });
+        });
+        return endpoint;
+    }
+
 
     addSubscriberEndpoint(senderId, endpoint) {
         this.subscribers[senderId] = endpoint;
@@ -70,9 +93,9 @@ module.exports = class Participant {
     }
 
     getRemoteEndpoint(senderId) {
-        const subscriber = (senderId === this.getId())
-            ? this.publisher
-            : this.getSubscriber(senderId, true);
+        const subscriber = (senderId === this.getId()) ?
+            this.publisher :
+            this.getSubscriber(senderId, true);
 
         return subscriber || this.newSubscriber(senderId);
     }
@@ -85,22 +108,23 @@ module.exports = class Participant {
 
         this.getRemoteEndpoint(senderId).then(endpoint => {
             this.initIceExchange(senderId, endpoint);
-            this.connectToRemote(endpoint, sender.publisher)
+            this.connectToRemote(endpoint, sender.publisher);
+            endpoint.processOffer(sdpOffer).then(sdpAnswer =>
+                this.notifyClient('gotAnswer', { senderId, sdpAnswer })
+            );
         });
-
-        endpoint.processOffer(sdpOffer).then(sdpAnswer =>
-            this.notifyClient('gotAnswer', { senderId, sdpAnswer })
-        );
 
         console.log(`${this.getId()} answered to ${senderId}`);
     }
 
     addCandidate(senderId, candidate) {
-        const subscriber = (senderId !== this.getId())
-            ? this.getSubscriber(senderId, true)
-            : this.publisher;
+        const subscriber = (senderId !== this.getId()) ?
+            this.getSubscriber(senderId, true) :
+            this.publisher;
 
-        subscriber && subscriber.addIceCandidate(candidate);
+        if (subscriber) {
+            subscriber.addIceCandidate(candidate);
+        }
         this.getCandidates(senderId).push({ candidate });
     }
 
@@ -112,10 +136,9 @@ module.exports = class Participant {
         this.roomManager.unregisterParticipant(pid, this.roomName);
     }
 
-    register({ name, prono }) {
+    register(name) {
         const uid = this.getId();
-        console.log(`registering ${uid} with name ${name}`);
-
+        this.state.name = name;
         this.roomManager.registerParticipant(this);
         this.notifyClient('registered', `Successfully registered ${uid}`);
     }
@@ -129,9 +152,8 @@ module.exports = class Participant {
             this.setPublisher(endpoint)
                 .addCandidatesToEndpoint(id, endpoint)
                 .subscribeToIceCandidate(id, endpoint)
-                .startLocalStream()
                 .sendStateToRoom()
-                .sendRoomStateToSelf(roomParticipants)
+                .sendRoomStateToSelf(this.roomManager.participantsByRoom[roomName]);
         });
     }
 
@@ -150,7 +172,7 @@ module.exports = class Participant {
     }
 
     notifyOthers(notification, data) {
-      this.socket.to(this.roomName).emit(notification, data);
+        this.socket.to(this.roomName).emit(notification, data);
     }
 
     notifyRoom() {
@@ -160,14 +182,9 @@ module.exports = class Participant {
 
     releaseEndpoints() {
         this.publisher && this.publisher.release();
-        Object.values(this.subscribers).forEach( endpoint => endpoint.release() );
+        Object.values(this.subscribers).forEach(endpoint => endpoint.release());
         this.publisher = null;
         this.subscribers = {};
-    }
-
-    startLocalStream() {
-        this.notifyClient('startLocalStream', this.getFromState('name'));
-        return this;
     }
 
     sendStateToRoom() {
@@ -195,7 +212,7 @@ module.exports = class Participant {
 
     // can return null for boolean comparison
     getSubscriber(id, returnNull = false) {
-        return this.subscribers[id] || ( returnNull ? null : [] );
+        return this.subscribers[id] || (returnNull ? null : []);
     }
 
     getId() {
@@ -214,8 +231,7 @@ module.exports = class Participant {
 
     setState(obj) {
         Object.keys(obj)
-          .filter(key => this.state.hasOwnProperty(key))
-          .forEach(key => { this.state[key] = obj[key] });
+            .filter(key => this.state.hasOwnProperty(key))
+            .forEach(key => { this.state[key] = obj[key] });
     }
-
 }

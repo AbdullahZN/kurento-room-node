@@ -1,8 +1,8 @@
 # kurento-room-node
 
-Kurento Room Server in NodeJS [![Code Climate](https://codeclimate.com/github/AbdullahZN/kurento-room-node/badges/gpa.svg)](https://codeclimate.com/github/AbdullahZN/kurento-room-node)
+Kurento Room Server in NodeJS
 
-### Requirements
+### Installation
 Install package from npm or yarn
 ```bash
 > npm install kurento-room-server || yarn add kurento-room-server
@@ -12,9 +12,7 @@ Install package from npm or yarn
 
 The server is a simple module designed to work on top of ExpressJS, and requires loading a JSON config file.
 
-Here's a basic use case, you can find an example config file in main/kurentoConfig.json
-
-A demo client implementation can be found in static/ folder
+Client side implementation resides in static/ folder
 
 ```js
 const path = require('path');
@@ -47,14 +45,24 @@ static/
     kurentoRoom.js : kurento room client
 ```
 
-## Client
+### Run demo
 
-All the room client logic resides inside kurentoRoom.js \(cf. file structure \) and exports core functionalities as follows
+The project has three npm scripts :
 
+**setup**, which installs every dependencies
+
+```bash
+npm run setup
 ```
-kurentoRoom.
-  on(event, callback)        => Event listener (see events section below)
-  start(userName, roomName)  => joins room and starts call
-  chatAll(message)           => send text chat to other participants
-  leaveRoom()                => leaves room
+
+**dev**, which runs app with webpack  
+
+```bash
+npm run dev
+```
+
+**demo**, which runs previous steps
+
+```bash
+npm run demo
 ```

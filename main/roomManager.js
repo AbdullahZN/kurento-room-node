@@ -19,8 +19,9 @@ module.exports = class kurentoRoom {
     }
 
     unregisterParticipant(id, roomName) {
-        const list = this.getParticipantsByRoom(roomName);
+        const list = this.getParticipantsByRoom(roomName) || [];
         this.participantsByRoom[roomName] = list.filter(participant => participant.id !== id);
+        delete this.participantsById[id];
     }
 
     setRoomParticipantList(roomName) {
@@ -33,20 +34,19 @@ module.exports = class kurentoRoom {
     }
 
     newPipeline(roomName, participant) {
-        return this.kms
-            .newPipeline(roomName)
-            .then(pipeline => this.setRoomParticipantList(roomName))
-            .catch(err => console.error(err));
+        return this.kms.newPipeline(roomName).then(pipeline =>
+          this.setRoomParticipantList(roomName)
+        );
     }
 
     addParticipantToRoom(roomName, participant) {
         if (!participant) return;
 
         return (this.getPipeline(roomName) || this.newPipeline(roomName))
-            .catch((err) => console.log(err))
             .then(() => this.createPublisherEndpoint(roomName, participant))
             .then(endpoint => {
-                roomParticipants.push(participant.getState());
+                console.log(`created endpoint for ${participant.state.name}`);
+                this.participantsByRoom[roomName].push(participant.getState());
                 return endpoint;
             });
     }
