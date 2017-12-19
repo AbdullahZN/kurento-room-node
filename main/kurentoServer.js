@@ -1,6 +1,6 @@
 const fs = require('fs');
 const https = require('https');
-const RoomManager = require('./RoomManager');
+const RoomManager = require('./roomManager');
 
 module.exports = (app, config) => {
     const port = config.server.port;

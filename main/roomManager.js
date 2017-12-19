@@ -1,6 +1,6 @@
-const io            = require('socket.io');
-const Participant   = require('./Participant');
-const Kms           = require('./Kms');
+const io = require('socket.io');
+const Participant = require('./participant');
+const Kms = require('./Kms');
 
 module.exports = class kurentoRoom {
     constructor(server, kmsUri) {
@@ -11,7 +11,7 @@ module.exports = class kurentoRoom {
     }
 
     initSocketConnection(server) {
-      io(server).on('connection', socket => new Participant(socket, this));
+        io(server).on('connection', socket => new Participant(socket, this));
     }
 
     registerParticipant(participant) {
@@ -35,7 +35,7 @@ module.exports = class kurentoRoom {
 
     newPipeline(roomName, participant) {
         return this.kms.newPipeline(roomName).then(pipeline =>
-          this.setRoomParticipantList(roomName)
+            this.setRoomParticipantList(roomName)
         );
     }
 
