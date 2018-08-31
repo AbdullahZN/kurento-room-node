@@ -98,7 +98,7 @@ socket
         const pc = participant.endpoint.peerConnection;
         const stream = (pc.getRemoteStreams()[0] || pc.getLocalStreams()[0]);
 
-        participant.src = window.URL.createObjectURL(stream);
+        participant.src = stream;
         ee.emit('newParticipant', participant);
     });
 })

@@ -1,7 +1,11 @@
 <template>
   <div id="video-list">
     <template v-for="participant in $store.state.participants">
-      <video :key="participant.id" autoplay :src="participant.src"></video>
+      <kms-video
+        :key="participant.id"
+        :srcObject="participant.src"
+      >
+      </kms-video>
     </template>
   </div>
 </template>
@@ -10,9 +14,15 @@
 
 const data = {};
 
+import Video from '@/views/Video';
+
 export default {
 
   name: 'chat',
+
+  components: {
+    'kms-video': Video,
+  },
 
   data: () => data,
 
