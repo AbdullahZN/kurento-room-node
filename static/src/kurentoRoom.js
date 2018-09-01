@@ -42,10 +42,9 @@ class Participant {
                 sendRequest('onIceCandidate', { candidate, senderId });
             }
         };
-        const peerType = (user.id === senderId) ? 'WebRtcPeerSendonly' : 'WebRtcPeerRecvonly';
-        participant.endpoint = kurentoUtils.WebRtcPeer[peerType](options, function (error) {
-            if (error)
-                return console.error(error);
+
+        participant.endpoint = kurentoUtils.WebRtcPeer.WebRtcPeerSendonly(options, function (error) {
+            if (error) return console.error(error);
             this.generateOffer((error, sdpOffer) => sendRequest('receiveVideo', { senderId, sdpOffer }));
         });
     }
